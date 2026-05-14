@@ -4,7 +4,7 @@ uvicorn[standard]==0.32.1
 
 # Database
 asyncpg==0.30.0
-psycopg[binary,pool]==3.2.3
+psycopg[binary,pool]==3.2.4
 
 # LangGraph + LLM
 langgraph==0.2.55

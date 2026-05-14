@@ -21,7 +21,7 @@ from src.config import settings
 
 async def main() -> None:
     text = " ".join(sys.argv[1:]) or "Hello from test script!"
-    phone = settings.ALLOWED_PHONE_NUMBERS[0]
+    phone = settings.allowed_list[0]
     wa_message_id = f"test_{uuid.uuid4().hex[:8]}"
 
     pool = await get_pool()

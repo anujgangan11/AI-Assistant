@@ -8,7 +8,12 @@ import express from 'express'
 import pg from 'pg'
 import pino from 'pino'
 import qrcode from 'qrcode-terminal'
-import 'dotenv/config'
+import dotenv from 'dotenv'
+import { fileURLToPath } from 'url'
+import { dirname, join } from 'path'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+dotenv.config({ path: join(__dirname, '../.env') })
 
 const { Pool } = pg
 
@@ -87,12 +92,15 @@ async function connect() {
   // ─── Inbound messages ───────────────────────────────────────────────────────
 
   sock.ev.on('messages.upsert', async ({ messages, type }) => {
-    // 'notify' = new messages pushed in real time; 'append' = history load
+    console.log(`messages.upsert type=${type} count=${messages.length}`)
+    messages.forEach(m => console.log('  msg:', JSON.stringify({ fromMe: m.key.fromMe, remoteJid: m.key.remoteJid, id: m.key.id, text: m.message?.conversation ?? m.message?.extendedTextMessage?.text })))
     if (type !== 'notify') return
 
     for (const msg of messages) {
-      if (msg.key.fromMe) continue                                      // skip sent
-      if (!msg.key.remoteJid?.endsWith('@s.whatsapp.net')) continue     // skip groups
+      const jid = msg.key.remoteJid ?? ''
+      const isSelf = jid.endsWith('@lid')                 // "Message Yourself" chat
+      const isDirect = jid.endsWith('@s.whatsapp.net')
+      if (!isSelf && !isDirect) continue                  // skip groups
 
       const text =
         msg.message?.conversation ??
@@ -100,8 +108,10 @@ async function connect() {
         ''
       if (!text.trim()) continue
 
-      const rawPhone = msg.key.remoteJid.replace('@s.whatsapp.net', '')
-      const phone = `+${rawPhone}`
+      // @lid JIDs are opaque privacy IDs — fall back to first allowed number
+      const phone = isSelf
+        ? [...ALLOWED][0]
+        : `+${jid.replace('@s.whatsapp.net', '')}`
 
       if (!ALLOWED.has(phone)) {
         console.log(`Ignored message from non-allowlisted number: ${phone}`)
