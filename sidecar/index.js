@@ -7,6 +7,7 @@ import { Boom } from '@hapi/boom'
 import express from 'express'
 import pg from 'pg'
 import pino from 'pino'
+import qrcode from 'qrcode-terminal'
 import 'dotenv/config'
 
 const { Pool } = pg
@@ -60,12 +61,15 @@ async function connect() {
     version,
     auth: state,
     logger,
-    printQRInTerminal: true,   // QR code prints here on first run
   })
 
   sock.ev.on('creds.update', saveCreds)
 
-  sock.ev.on('connection.update', ({ connection, lastDisconnect }) => {
+  sock.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
+    if (qr) {
+      console.log('\nScan this QR code with WhatsApp → Settings → Linked Devices → Link a Device:\n')
+      qrcode.generate(qr, { small: true })
+    }
     if (connection === 'open') {
       console.log('Connected to WhatsApp')
     } else if (connection === 'close') {
