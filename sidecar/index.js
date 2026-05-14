@@ -23,7 +23,10 @@ const ALLOWED = new Set(
   (process.env.ALLOWED_PHONE_NUMBERS || '').split(',').map(p => p.trim())
 )
 
-const logger = pino({ level: 'warn' })   // set to 'debug' for verbose Baileys logs
+const logger = pino({ level: 'warn' })
+
+// @lid → E.164 phone number, populated from contacts sync on startup
+const lidToPhone = new Map()
 
 // ─── HTTP server — Python responder calls POST /send to reply ─────────────────
 
@@ -38,7 +41,6 @@ app.post('/send', async (req, res) => {
     if (!sock) return res.status(503).json({ error: 'WhatsApp not connected yet' })
 
     const jid = `${to.replace(/^\+/, '')}@s.whatsapp.net`
-    // WhatsApp hard-caps messages at 4096 chars
     const chunks = text.match(/.{1,4096}/gs) ?? [text]
     for (const chunk of chunks) {
       await sock.sendMessage(jid, { text: chunk })
@@ -62,13 +64,19 @@ async function connect() {
   const { version } = await fetchLatestBaileysVersion()
   const { state, saveCreds } = await useMultiFileAuthState('./auth')
 
-  sock = makeWASocket({
-    version,
-    auth: state,
-    logger,
-  })
+  sock = makeWASocket({ version, auth: state, logger })
 
   sock.ev.on('creds.update', saveCreds)
+
+  // Build @lid → phone map from contacts sync
+  sock.ev.on('contacts.upsert', (contacts) => {
+    for (const c of contacts) {
+      if (c.lid && c.id?.endsWith('@s.whatsapp.net')) {
+        const phone = `+${c.id.replace('@s.whatsapp.net', '')}`
+        lidToPhone.set(c.lid, phone)
+      }
+    }
+  })
 
   sock.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
     if (qr) {
@@ -92,15 +100,10 @@ async function connect() {
   // ─── Inbound messages ───────────────────────────────────────────────────────
 
   sock.ev.on('messages.upsert', async ({ messages, type }) => {
-    console.log(`messages.upsert type=${type} count=${messages.length}`)
-    messages.forEach(m => console.log('  msg:', JSON.stringify({ fromMe: m.key.fromMe, remoteJid: m.key.remoteJid, id: m.key.id, text: m.message?.conversation ?? m.message?.extendedTextMessage?.text })))
     if (type !== 'notify') return
 
     for (const msg of messages) {
       const jid = msg.key.remoteJid ?? ''
-      const isSelf = jid.endsWith('@lid')                 // "Message Yourself" chat
-      const isDirect = jid.endsWith('@s.whatsapp.net')
-      if (!isSelf && !isDirect) continue                  // skip groups
 
       const text =
         msg.message?.conversation ??
@@ -108,10 +111,26 @@ async function connect() {
         ''
       if (!text.trim()) continue
 
-      // @lid JIDs are opaque privacy IDs — fall back to first allowed number
-      const phone = isSelf
-        ? [...ALLOWED][0]
-        : `+${jid.replace('@s.whatsapp.net', '')}`
+      let phone
+
+      if (jid.endsWith('@s.whatsapp.net')) {
+        // Standard JID — phone number is in the JID
+        phone = `+${jid.replace('@s.whatsapp.net', '')}`
+      } else if (jid.endsWith('@lid')) {
+        if (msg.key.fromMe) {
+          // Self-chat ("Message Yourself")
+          phone = [...ALLOWED][0]
+        } else {
+          // Contact using privacy ID — resolve via contacts map
+          phone = lidToPhone.get(jid) ?? null
+          if (!phone) {
+            console.log(`Cannot resolve @lid ${jid} — skipping (contact not yet synced)`)
+            continue
+          }
+        }
+      } else {
+        continue  // group or unknown JID type
+      }
 
       if (!ALLOWED.has(phone)) {
         console.log(`Ignored message from non-allowlisted number: ${phone}`)
