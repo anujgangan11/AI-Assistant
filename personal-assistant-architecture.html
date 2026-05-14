@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Personal Assistant — Architecture Block Diagram</title>
+<style>
+  :root {
+    --bg-page: #faf9f5;
+    --bg-card: #ffffff;
+    --text-primary: #1f1f1c;
+    --text-secondary: #5f5e5a;
+    --border: rgba(0,0,0,0.12);
+
+    --c-gray-50:  #F1EFE8; --c-gray-600:  #5F5E5A; --c-gray-800:  #444441;
+    --c-blue-50:  #E6F1FB; --c-blue-600:  #185FA5; --c-blue-800:  #0C447C;
+    --c-teal-50:  #E1F5EE; --c-teal-600:  #0F6E56; --c-teal-800:  #085041;
+    --c-purple-50:#EEEDFE; --c-purple-600:#534AB7; --c-purple-800:#3C3489;
+    --c-coral-50: #FAECE7; --c-coral-600: #993C1D; --c-coral-800: #712B13;
+    --c-green-50: #EAF3DE; --c-green-600: #3B6D11; --c-green-800: #27500A;
+    --c-amber-50: #FAEEDA; --c-amber-600: #854F0B; --c-amber-800: #633806;
+    --c-pink-50:  #FBEAF0; --c-pink-600:  #993556; --c-pink-800:  #72243E;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-page: #1a1a17;
+      --bg-card: #232320;
+      --text-primary: #ebeae3;
+      --text-secondary: #b4b2a9;
+      --border: rgba(255,255,255,0.14);
+
+      --c-gray-50:  #2C2C2A; --c-gray-600:  #B4B2A9; --c-gray-800:  #D3D1C7;
+      --c-blue-50:  #042C53; --c-blue-600:  #85B7EB; --c-blue-800:  #B5D4F4;
+      --c-teal-50:  #04342C; --c-teal-600:  #5DCAA5; --c-teal-800:  #9FE1CB;
+      --c-purple-50:#26215C; --c-purple-600:#AFA9EC; --c-purple-800:#CECBF6;
+      --c-coral-50: #4A1B0C; --c-coral-600: #F0997B; --c-coral-800: #F5C4B3;
+      --c-green-50: #173404; --c-green-600: #97C459; --c-green-800: #C0DD97;
+      --c-amber-50: #412402; --c-amber-600: #EF9F27; --c-amber-800: #FAC775;
+      --c-pink-50:  #4B1528; --c-pink-600:  #ED93B1; --c-pink-800:  #F4C0D1;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 32px 16px 64px;
+    background: var(--bg-page);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  .container { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 22px; font-weight: 500; margin: 0 0 8px; }
+  .subtitle { color: var(--text-secondary); margin: 0 0 24px; font-size: 14px; }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .card svg { display: block; width: 100%; height: auto; }
+  .legend {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px 24px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .legend li { display: flex; align-items: center; gap: 8px; }
+  .swatch { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+  .footer { color: var(--text-secondary); font-size: 13px; margin-top: 16px; }
+
+  .t  { font-family: inherit; font-size: 14px; font-weight: 400; fill: var(--text-primary); }
+  .ts { font-family: inherit; font-size: 12px; font-weight: 400; fill: var(--text-secondary); }
+  .th { font-family: inherit; font-size: 14px; font-weight: 500; fill: var(--text-primary); }
+
+  .c-gray   rect { fill: var(--c-gray-50);   stroke: var(--c-gray-600); }
+  .c-gray   .th  { fill: var(--c-gray-800); }
+  .c-gray   .ts  { fill: var(--c-gray-600); }
+  .c-blue   rect { fill: var(--c-blue-50);   stroke: var(--c-blue-600); }
+  .c-blue   .th  { fill: var(--c-blue-800); }
+  .c-blue   .ts  { fill: var(--c-blue-600); }
+  .c-teal   rect { fill: var(--c-teal-50);   stroke: var(--c-teal-600); }
+  .c-teal   .th  { fill: var(--c-teal-800); }
+  .c-teal   .ts  { fill: var(--c-teal-600); }
+  .c-purple rect { fill: var(--c-purple-50); stroke: var(--c-purple-600); }
+  .c-purple .th  { fill: var(--c-purple-800); }
+  .c-purple .ts  { fill: var(--c-purple-600); }
+  .c-coral  rect { fill: var(--c-coral-50);  stroke: var(--c-coral-600); }
+  .c-coral  .th  { fill: var(--c-coral-800); }
+  .c-coral  .ts  { fill: var(--c-coral-600); }
+  .c-green  rect { fill: var(--c-green-50);  stroke: var(--c-green-600); }
+  .c-green  .th  { fill: var(--c-green-800); }
+  .c-green  .ts  { fill: var(--c-green-600); }
+  .c-amber  rect { fill: var(--c-amber-50);  stroke: var(--c-amber-600); }
+  .c-amber  .th  { fill: var(--c-amber-800); }
+  .c-amber  .ts  { fill: var(--c-amber-600); }
+  .c-pink   rect { fill: var(--c-pink-50);   stroke: var(--c-pink-600); }
+  .c-pink   .th  { fill: var(--c-pink-800); }
+  .c-pink   .ts  { fill: var(--c-pink-600); }
+
+  .arr { stroke: var(--text-secondary); stroke-width: 1.5; fill: none; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Personal assistant — block diagram</h1>
+  <p class="subtitle">Two gateways, Postgres-backed queue, LangGraph runtime with four specialist experts, unified data backbone.</p>
+
+  <div class="card">
+    <svg viewBox="0 0 680 1180" role="img">
+      <title>Personal assistant full block diagram</title>
+      <desc>End-to-end architecture: two gateways feed a Postgres-backed queue, a worker runs a LangGraph pipeline of context loader, supervisor, four experts, memory writer and responder, all backed by a unified Postgres data layer and a sandboxed MCP tool layer.</desc>
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+      </defs>
+
+      <text class="th" x="40" y="32">1. Gateways</text>
+
+      <g class="c-gray">
+        <rect x="40" y="48" width="290" height="62" rx="8" stroke-width="0.5"/>
+        <text class="th" x="185" y="72" text-anchor="middle" dominant-baseline="central">WhatsApp gateway</text>
+        <text class="ts" x="185" y="92" text-anchor="middle" dominant-baseline="central">Webhook, HMAC verify, allowlist</text>
+      </g>
+
+      <g class="c-gray">
+        <rect x="350" y="48" width="290" height="62" rx="8" stroke-width="0.5"/>
+        <text class="th" x="495" y="72" text-anchor="middle" dominant-baseline="central">Web chat gateway</text>
+        <text class="ts" x="495" y="92" text-anchor="middle" dominant-baseline="central">SSE streaming, session auth</text>
+      </g>
+
+      <line x1="185" y1="110" x2="290" y2="158" class="arr" marker-end="url(#arrow)"/>
+      <line x1="495" y1="110" x2="390" y2="158" class="arr" marker-end="url(#arrow)"/>
+
+      <text class="th" x="40" y="148">2. Queue + identity</text>
+
+      <g class="c-blue">
+        <rect x="220" y="158" width="240" height="62" rx="8" stroke-width="0.5"/>
+        <text class="th" x="340" y="182" text-anchor="middle" dominant-baseline="central">Inbound queue</text>
+        <text class="ts" x="340" y="202" text-anchor="middle" dominant-baseline="central">Postgres, LISTEN/NOTIFY</text>
+      </g>
+
+      <line x1="340" y1="220" x2="340" y2="248" class="arr" marker-end="url(#arrow)"/>
+
+      <g class="c-blue">
+        <rect x="220" y="248" width="240" height="62" rx="8" stroke-width="0.5"/>
+        <text class="th" x="340" y="272" text-anchor="middle" dominant-baseline="central">Worker + debounce</text>
+        <text class="ts" x="340" y="292" text-anchor="middle" dominant-baseline="central">SKIP LOCKED, 8s coalesce</text>
+      </g>
+
+      <line x1="340" y1="310" x2="340" y2="338" class="arr" marker-end="url(#arrow)"/>
+
+      <g class="c-blue">
+        <rect x="220" y="338" width="240" height="62" rx="8" stroke-width="0.5"/>
+        <text class="th" x="340" y="362" text-anchor="middle" dominant-baseline="central">Identity + scope</text>
+        <text class="ts" x="340" y="382" text-anchor="middle" dominant-baseline="central">Phone to user id, scope tag</text>
+      </g>
+
+      <line x1="340" y1="400" x2="340" y2="438" class="arr" marker-end="url(#arrow)"/>
+
+      <text class="th" x="40" y="430">3. LangGraph runtime</text>
+
+      <g class="c-purple">
+        <rect x="40" y="438" width="600" height="436" rx="14" stroke-width="0.5"/>
+      </g>
+
+      <g class="c-teal">
+        <rect x="60" y="460" width="560" height="62" rx="8" stroke-width="0.5"/>
+        <text class="th" x="340" y="484" text-anchor="middle" dominant-baseline="central">Context loader</text>
+        <text class="ts" x="340" y="504" text-anchor="middle" dominant-baseline="central">History, facts, episodes, RAG in parallel</text>
+      </g>
+
+      <line x1="340" y1="522" x2="340" y2="544" class="arr" marker-end="url(#arrow)"/>
+
+      <g class="c-teal">
+        <rect x="220" y="544" width="240" height="62" rx="8" stroke-width="0.5"/>
+        <text class="th" x="340" y="568" text-anchor="middle" dominant-baseline="central">Supervisor</text>
+        <text class="ts" x="340" y="588" text-anchor="middle" dominant-baseline="central">Classify, dispatch one expert</text>
+      </g>
+
+      <line x1="245" y1="606" x2="120" y2="638" class="arr" marker-end="url(#arrow)"/>
+      <line x1="295" y1="606" x2="265" y2="638" class="arr" marker-end="url(#arrow)"/>
+      <line x1="385" y1="606" x2="415" y2="638" class="arr" marker-end="url(#arrow)"/>
+      <line x1="435" y1="606" x2="560" y2="638" class="arr" marker-end="url(#arrow)"/>
+
+      <g class="c-coral">
+        <rect x="60" y="638" width="130" height="62" rx="8" stroke-width="0.5"/>
+        <text class="th" x="125" y="660" text-anchor="middle" dominant-baseline="central">Financial</text>
+        <text class="ts" x="125" y="680" text-anchor="middle" dominant-baseline="central">Cash flow, tax, accounts</text>
+      </g>
+
+      <g class="c-coral">
+        <rect x="205" y="638" width="120" height="62" rx="8" stroke-width="0.5"/>
+        <text class="th" x="265" y="660" text-anchor="middle" dominant-baseline="central">Trader</text>
+        <text class="ts" x="265" y="680" text-anchor="middle" dominant-baseline="central">Setups, paper HITL</text>
+      </g>
+
+      <g class="c-coral">
+        <rect x="355" y="638" width="120" height="62" rx="8" stroke-width="0.5"/>
+        <text class="th" x="415" y="660" text-anchor="middle" dominant-baseline="central">Health</text>
+        <text class="ts" x="415" y="680" text-anchor="middle" dominant-baseline="central">Biometrics Q&amp;A</text>
+      </g>
+
+      <g class="c-coral">
+        <rect x="490" y="638" width="130" height="62" rx="8" stroke-width="0.5"/>
+        <text class="th" x="555" y="660" text-anchor="middle" dominant-baseline="central">Analyst</text>
+        <text class="ts" x="555" y="680" text-anchor="middle" dominant-baseline="central">Cross-domain SQL</text>
+      </g>
+
+      <line x1="125" y1="700" x2="250" y2="730" class="arr" marker-end="url(#arrow)"/>
+      <line x1="265" y1="700" x2="310" y2="730" class="arr" marker-end="url(#arrow)"/>
+      <line x1="415" y1="700" x2="370" y2="730" class="arr" marker-end="url(#arrow)"/>
+      <line x1="555" y1="700" x2="430" y2="730" class="arr" marker-end="url(#arrow)"/>
+
+      <g class="c-teal">
+        <rect x="220" y="730" width="240" height="48" rx="8" stroke-width="0.5"/>
+        <text class="th" x="340" y="748" text-anchor="middle" dominant-baseline="central">Memory writer</text>
+        <text class="ts" x="340" y="766" text-anchor="middle" dominant-baseline="central">Extract facts, write episodes</text>
+      </g>
+
+      <line x1="340" y1="778" x2="340" y2="800" class="arr" marker-end="url(#arrow)"/>
+
+      <g class="c-teal">
+        <rect x="220" y="800" width="240" height="58" rx="8" stroke-width="0.5"/>
+        <text class="th" x="340" y="822" text-anchor="middle" dominant-baseline="central">Responder</text>
+        <text class="ts" x="340" y="842" text-anchor="middle" dominant-baseline="central">Channel-aware formatting</text>
+      </g>
+
+      <line x1="220" y1="828" x2="180" y2="115" class="arr" stroke-dasharray="3 3" marker-end="url(#arrow)" opacity="0.5"/>
+      <line x1="460" y1="828" x2="500" y2="115" class="arr" stroke-dasharray="3 3" marker-end="url(#arrow)" opacity="0.5"/>
+
+      <text class="th" x="40" y="908">4. Shared backbone</text>
+
+      <g class="c-green">
+        <rect x="40" y="924" width="380" height="170" rx="12" stroke-width="0.5"/>
+        <text class="th" x="60" y="950">Postgres (single instance)</text>
+        <text class="ts" x="60" y="972">TimescaleDB hypertables</text>
+        <text class="ts" x="60" y="992">pgvector + pgvectorscale (RAG, memory)</text>
+        <text class="ts" x="60" y="1012">LangGraph checkpointer</text>
+        <text class="ts" x="60" y="1032">Queue tables, facts, episodes</text>
+        <text class="ts" x="60" y="1052">Row-level security per user</text>
+        <text class="ts" x="60" y="1072">pgBackRest, off-machine WAL</text>
+      </g>
+
+      <g class="c-amber">
+        <rect x="440" y="924" width="200" height="170" rx="12" stroke-width="0.5"/>
+        <text class="th" x="460" y="950">MCP tool layer</text>
+        <text class="ts" x="460" y="972">Sandboxed Python exec</text>
+        <text class="ts" x="460" y="992">Robinhood, Tradier paper</text>
+        <text class="ts" x="460" y="1012">Stock technicals, TradingView</text>
+        <text class="ts" x="460" y="1032">PayPal read-only</text>
+        <text class="ts" x="460" y="1052">Filesystem allowlist, web</text>
+        <text class="ts" x="460" y="1072">SDK pinned, CVE watched</text>
+      </g>
+
+      <line x1="340" y1="858" x2="220" y2="920" class="arr" stroke-dasharray="3 3" marker-end="url(#arrow)" opacity="0.6"/>
+      <line x1="340" y1="858" x2="540" y2="920" class="arr" stroke-dasharray="3 3" marker-end="url(#arrow)" opacity="0.6"/>
+
+      <text class="th" x="40" y="1126">5. Out of band</text>
+
+      <g class="c-pink">
+        <rect x="40" y="1138" width="290" height="32" rx="8" stroke-width="0.5"/>
+        <text class="ts" x="60" y="1158">Ingestion: Apple Health, brokers, market</text>
+      </g>
+      <g class="c-pink">
+        <rect x="350" y="1138" width="290" height="32" rx="8" stroke-width="0.5"/>
+        <text class="ts" x="370" y="1158">Cron: reaper, decay, rollups, alerts</text>
+      </g>
+    </svg>
+  </div>
+
+  <ul class="legend">
+    <li><span class="swatch" style="background: var(--c-gray-600)"></span>Gateways</li>
+    <li><span class="swatch" style="background: var(--c-blue-600)"></span>Queue and identity</li>
+    <li><span class="swatch" style="background: var(--c-purple-600)"></span>LangGraph runtime</li>
+    <li><span class="swatch" style="background: var(--c-teal-600)"></span>Pipeline nodes</li>
+    <li><span class="swatch" style="background: var(--c-coral-600)"></span>Expert agents</li>
+    <li><span class="swatch" style="background: var(--c-green-600)"></span>Data backbone</li>
+    <li><span class="swatch" style="background: var(--c-amber-600)"></span>Tool layer</li>
+    <li><span class="swatch" style="background: var(--c-pink-600)"></span>Out of band</li>
+  </ul>
+
+  <p class="footer">Solid arrows: linear message flow for one turn. Dashed arrows: cross-cutting access (runtime reads the data backbone and tool layer; responder pushes back through whichever gateway the message arrived on).</p>
+</div>
+</body>
+</html>
