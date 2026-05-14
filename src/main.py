@@ -1,10 +1,9 @@
 import logging
-
-from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
-from src.db.connection import get_pool, close_pool
-from src.gateway.whatsapp import router as whatsapp_router
+from fastapi import FastAPI
+
+from src.db.connection import close_pool, get_pool
 
 logging.basicConfig(
     level=logging.INFO,
@@ -22,8 +21,7 @@ async def lifespan(app: FastAPI):
     await close_pool()
 
 
-app = FastAPI(title="AI Assistant Gateway", lifespan=lifespan)
-app.include_router(whatsapp_router)
+app = FastAPI(title="AI Assistant", lifespan=lifespan)
 
 
 @app.get("/health")

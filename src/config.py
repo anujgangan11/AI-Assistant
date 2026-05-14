@@ -5,12 +5,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
-    # Meta / WhatsApp
-    META_APP_SECRET: str
-    META_ACCESS_TOKEN: str
-    META_PHONE_NUMBER_ID: str
-    META_VERIFY_TOKEN: str
-
     # Allowlist — stored as a set for O(1) lookup
     ALLOWED_PHONE_NUMBERS: list[str]
 
@@ -21,8 +15,8 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str
 
-    # Dev tunnel
-    NGROK_URL: str = ""
+    # Baileys sidecar
+    SIDECAR_URL: str = "http://localhost:3000"
 
     @field_validator("ALLOWED_PHONE_NUMBERS", mode="before")
     @classmethod
@@ -37,7 +31,6 @@ class Settings(BaseSettings):
 
     @property
     def phone_to_user_id(self) -> dict[str, str]:
-        # v0: derive a stable user_id from the phone number
         return {phone: f"user_{phone.lstrip('+')}" for phone in self.ALLOWED_PHONE_NUMBERS}
 
 

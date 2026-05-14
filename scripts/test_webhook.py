@@ -1,77 +1,49 @@
-"""Send a fake signed WhatsApp webhook payload to the local server."""
-import hashlib
-import hmac
-import json
+"""
+Simulate an inbound WhatsApp message by inserting directly into the queue.
+Use this to test the worker without needing the sidecar running.
+
+Usage:
+  python scripts/test_webhook.py "hello from test"
+"""
+import asyncio
 import sys
-import httpx
 import pathlib
+import uuid
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 
-# Load .env so we can read META_APP_SECRET
 from dotenv import load_dotenv
-import os
-
 load_dotenv()
 
-BASE_URL = os.getenv("NGROK_URL", "http://localhost:8000")
-META_APP_SECRET = os.getenv("META_APP_SECRET", "")
-PHONE = os.getenv("ALLOWED_PHONE_NUMBERS", "+14085551234").split(",")[0].strip()
+from src.db.connection import get_pool, close_pool
+from src.config import settings
 
 
-def make_payload(phone: str, text: str, msg_id: str = "wamid.test123") -> dict:
-    return {
-        "object": "whatsapp_business_account",
-        "entry": [
-            {
-                "id": "ENTRY_ID",
-                "changes": [
-                    {
-                        "value": {
-                            "messaging_product": "whatsapp",
-                            "messages": [
-                                {
-                                    "from": phone,
-                                    "id": msg_id,
-                                    "type": "text",
-                                    "text": {"body": text},
-                                }
-                            ],
-                        },
-                        "field": "messages",
-                    }
-                ],
-            }
-        ],
-    }
-
-
-def sign(payload_bytes: bytes) -> str:
-    sig = hmac.new(META_APP_SECRET.encode(), payload_bytes, hashlib.sha256).hexdigest()
-    return f"sha256={sig}"
-
-
-def main() -> None:
+async def main() -> None:
     text = " ".join(sys.argv[1:]) or "Hello from test script!"
-    payload = make_payload(PHONE, text)
-    body = json.dumps(payload).encode()
-    signature = sign(body)
+    phone = settings.ALLOWED_PHONE_NUMBERS[0]
+    wa_message_id = f"test_{uuid.uuid4().hex[:8]}"
 
-    print(f"POST {BASE_URL}/webhook")
-    print(f"Phone : {PHONE}")
-    print(f"Text  : {text}")
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            INSERT INTO inbound_messages (wa_message_id, phone_number, user_id, message_text)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (wa_message_id) DO NOTHING
+            """,
+            wa_message_id,
+            phone,
+            phone,
+            text,
+        )
 
-    resp = httpx.post(
-        f"{BASE_URL}/webhook",
-        content=body,
-        headers={
-            "Content-Type": "application/json",
-            "X-Hub-Signature-256": signature,
-        },
-    )
-    print(f"Status: {resp.status_code}")
-    print(f"Body  : {resp.text}")
+    print(f"Inserted: [{wa_message_id}] from {phone}: {text!r}")
+    print("Check queue:")
+    print("  psql assistant -c \"SELECT id, message_text, status FROM inbound_messages ORDER BY received_at DESC LIMIT 5;\"")
+
+    await close_pool()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
