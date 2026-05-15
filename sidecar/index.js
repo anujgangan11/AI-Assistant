@@ -37,10 +37,11 @@ let sock = null
 
 app.post('/send', async (req, res) => {
   try {
-    const { to, text } = req.body
+    const { to, reply_jid, text } = req.body
     if (!sock) return res.status(503).json({ error: 'WhatsApp not connected yet' })
 
-    const jid = `${to.replace(/^\+/, '')}@s.whatsapp.net`
+    // Prefer the original JID (preserves @lid for self-chat), fall back to phone→JID
+    const jid = reply_jid ?? `${to.replace(/^\+/, '')}@s.whatsapp.net`
     const chunks = text.match(/.{1,4096}/gs) ?? [text]
     for (const chunk of chunks) {
       await sock.sendMessage(jid, { text: chunk })
@@ -139,12 +140,12 @@ async function connect() {
 
       try {
         await pool.query(
-          `INSERT INTO inbound_messages (wa_message_id, phone_number, user_id, message_text)
-           VALUES ($1, $2, $3, $4)
+          `INSERT INTO inbound_messages (wa_message_id, phone_number, user_id, message_text, reply_jid)
+           VALUES ($1, $2, $3, $4, $5)
            ON CONFLICT (wa_message_id) DO NOTHING`,
-          [msg.key.id, phone, phone, text]
+          [msg.key.id, phone, phone, text, jid]
         )
-        console.log(`Queued from ${phone}: ${text.slice(0, 80)}`)
+        console.log(`Queued from ${phone} (jid=${jid}): ${text.slice(0, 80)}`)
       } catch (err) {
         console.error('DB insert error:', err.message)
       }

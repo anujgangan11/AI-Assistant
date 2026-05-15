@@ -88,7 +88,7 @@ async def _process_phone(phone: str, pool: asyncpg.Pool) -> None:
         async with conn.transaction():
             rows = await conn.fetch(
                 """
-                SELECT id, message_text, user_id
+                SELECT id, message_text, user_id, reply_jid
                 FROM   inbound_messages
                 WHERE  phone_number = $1
                   AND  status = 'pending'
@@ -113,6 +113,7 @@ async def _process_phone(phone: str, pool: asyncpg.Pool) -> None:
 
     combined_text = "\n".join(r["message_text"] for r in rows)
     user_id = rows[0]["user_id"]
+    reply_jid = rows[0]["reply_jid"]  # use original JID to route reply correctly
     logger.info(
         "Processing %d message(s) from %s (user=%s): %r",
         len(rows), phone, user_id, combined_text[:80],
@@ -124,7 +125,7 @@ async def _process_phone(phone: str, pool: asyncpg.Pool) -> None:
         async with httpx.AsyncClient(timeout=10) as client:
             resp = await client.post(
                 f"{settings.SIDECAR_URL}/send",
-                json={"to": phone, "text": reply},
+                json={"to": phone, "reply_jid": reply_jid, "text": reply},
             )
             resp.raise_for_status()
 
