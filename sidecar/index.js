@@ -28,6 +28,9 @@ const logger = pino({ level: 'warn' })
 // @lid → E.164 phone number, populated from contacts sync on startup
 const lidToPhone = new Map()
 
+// Own @lid — set on connection open, used to identify the "Message Yourself" chat
+let ownLid = null
+
 // ─── HTTP server — Python responder calls POST /send to reply ─────────────────
 
 const app = express()
@@ -85,7 +88,11 @@ async function connect() {
       qrcode.generate(qr, { small: true })
     }
     if (connection === 'open') {
-      console.log('Connected to WhatsApp')
+      // Capture own @lid so we can identify the "Message Yourself" chat
+      // sock.user.lid may include a device suffix: "169681323311250:6@lid" → strip to "169681323311250@lid"
+      const rawLid = sock.user?.lid ?? ''
+      ownLid = rawLid.replace(/:\d+@lid$/, '@lid')
+      console.log(`Connected to WhatsApp (ownLid=${ownLid})`)
     } else if (connection === 'close') {
       sock = null
       const code = new Boom(lastDisconnect?.error)?.output?.statusCode
@@ -119,10 +126,12 @@ async function connect() {
         phone = `+${jid.replace('@s.whatsapp.net', '')}`
       } else if (jid.endsWith('@lid')) {
         if (msg.key.fromMe) {
-          // Self-chat ("Message Yourself")
+          // fromMe + own @lid = "Message Yourself" chat → process
+          // fromMe + someone else's @lid = outgoing message to a contact → skip
+          if (jid !== ownLid) continue
           phone = [...ALLOWED][0]
         } else {
-          // Contact using privacy ID — resolve via contacts map
+          // Incoming from a contact using a privacy @lid — resolve to phone
           phone = lidToPhone.get(jid) ?? null
           if (!phone) {
             console.log(`Cannot resolve @lid ${jid} — skipping (contact not yet synced)`)
