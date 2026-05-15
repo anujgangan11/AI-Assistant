@@ -115,7 +115,7 @@ async function connect() {
       let phone
 
       if (jid.endsWith('@s.whatsapp.net')) {
-        // Standard JID — phone number is in the JID
+        if (msg.key.fromMe) continue           // outgoing message to someone else — skip
         phone = `+${jid.replace('@s.whatsapp.net', '')}`
       } else if (jid.endsWith('@lid')) {
         if (msg.key.fromMe) {
