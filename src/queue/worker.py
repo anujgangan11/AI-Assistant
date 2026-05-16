@@ -3,7 +3,6 @@ import logging
 import uuid as uuid_mod
 
 import asyncpg
-import httpx
 
 from src.config import settings
 from src.db.connection import get_pool
@@ -120,21 +119,14 @@ async def _process_phone(phone: str, pool: asyncpg.Pool) -> None:
     )
 
     try:
-        reply = await _generate_reply(combined_text)
-
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.post(
-                f"{settings.SIDECAR_URL}/send",
-                json={"to": phone, "reply_jid": reply_jid, "text": reply},
-            )
-            resp.raise_for_status()
+        await _run_graph(combined_text, phone, user_id, reply_jid)
 
         async with pool.acquire() as conn:
             await conn.execute(
                 "UPDATE inbound_messages SET status='done', done_at=NOW() WHERE id=ANY($1)",
                 ids,
             )
-        logger.info("Replied to %s, marked %d message(s) done", phone, len(ids))
+        logger.info("Graph replied to %s, marked %d message(s) done", phone, len(ids))
 
     except Exception as exc:
         logger.exception("Failed to process messages from %s", phone)
@@ -152,9 +144,21 @@ async def _process_phone(phone: str, pool: asyncpg.Pool) -> None:
             )
 
 
-async def _generate_reply(text: str) -> str:
-    # ── STUB: echo reply — replaced by LangGraph in step 2 ──────────────────
-    return f"Echo: {text}"
+async def _run_graph(text: str, phone: str, user_id: str, reply_jid: str) -> None:
+    from src.graph.graph import graph
+    from langchain_core.messages import HumanMessage
+
+    initial_state = {
+        "thread_id": user_id,
+        "user_id": user_id,
+        "phone_number": phone,
+        "reply_jid": reply_jid,
+        "inbound_text": text,
+        "messages": [HumanMessage(content=text)],
+        "reply_text": "",
+        "memories_context": "",
+    }
+    await graph.ainvoke(initial_state, config={"configurable": {"thread_id": user_id}})
 
 
 # ─── Startup drain ────────────────────────────────────────────────────────────

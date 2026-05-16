@@ -9,14 +9,20 @@ psycopg[binary,pool]==3.2.4
 # LangGraph + LLM
 langgraph==0.2.55
 langgraph-checkpoint-postgres==2.0.8
-langchain-anthropic==0.3.0
-anthropic==0.40.0
+langchain-anthropic>=0.3.12
+anthropic>=0.50.0
 
 # Tools
 tavily-python==0.5.0
 
 # HTTP client (Meta API calls)
 httpx==0.28.0
+
+# Memory
+mem0ai
+ollama
+langchain-openai
+langchain-ollama
 
 # Config
 pydantic==2.10.3
