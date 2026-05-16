@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Assistant</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0a0a0a;
+      color: #e5e5e5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .container { max-width: 640px; width: 100%; }
+
+    .badge {
+      display: inline-block;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      color: #25d366;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.3rem 0.75rem;
+      border-radius: 999px;
+      margin-bottom: 1.5rem;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      margin-bottom: 1rem;
+    }
+
+    h1 span { color: #25d366; }
+
+    .subtitle {
+      font-size: 1.1rem;
+      color: #888;
+      line-height: 1.6;
+      margin-bottom: 2.5rem;
+    }
+
+    .flow {
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 2.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .step {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 0.5rem 0.9rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .arrow { color: #444; font-size: 1rem; }
+
+    .stack {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .card {
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+
+    .card-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #555;
+      margin-bottom: 0.5rem;
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #e5e5e5;
+      margin-bottom: 0.25rem;
+    }
+
+    .card-sub {
+      font-size: 0.8rem;
+      color: #666;
+    }
+
+    .links { display: flex; gap: 1rem; }
+
+    a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: opacity 0.15s;
+    }
+
+    a:hover { opacity: 0.8; }
+
+    .btn-primary { background: #25d366; color: #000; }
+    .btn-secondary { background: #1a1a1a; border: 1px solid #2a2a2a; color: #e5e5e5; }
+
+    footer {
+      margin-top: 3rem;
+      font-size: 0.78rem;
+      color: #444;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="badge">Personal AI · v0</div>
+
+    <h1>Your AI assistant<br/>lives in <span>WhatsApp</span></h1>
+
+    <p class="subtitle">
+      Message yourself on WhatsApp and get an AI-powered reply.
+      No Meta Business account. No app installs. Just your number.
+    </p>
+
+    <div class="flow">
+      <div class="step">📱 WhatsApp</div>
+      <div class="arrow">→</div>
+      <div class="step">⚡ Baileys</div>
+      <div class="arrow">→</div>
+      <div class="step">🐘 Postgres</div>
+      <div class="arrow">→</div>
+      <div class="step">🤖 LangGraph</div>
+      <div class="arrow">→</div>
+      <div class="step">💬 Reply</div>
+    </div>
+
+    <div class="stack">
+      <div class="card">
+        <div class="card-label">Transport</div>
+        <div class="card-title">Baileys Sidecar</div>
+        <div class="card-sub">Node.js · WebSocket · QR auth</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Queue</div>
+        <div class="card-title">PostgreSQL</div>
+        <div class="card-sub">LISTEN/NOTIFY · SKIP LOCKED</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Agent</div>
+        <div class="card-title">LangGraph</div>
+        <div class="card-sub">Claude Sonnet · Tavily search</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Worker</div>
+        <div class="card-title">Python asyncio</div>
+        <div class="card-sub">8s debounce · reaper · retry</div>
+      </div>
+    </div>
+
+    <div class="links">
+      <a class="btn-primary" href="https://github.com/anujgangan11/AI-Assistant">GitHub →</a>
+      <a class="btn-secondary" href="https://github.com/anujgangan11/AI-Assistant/blob/main/TODO.md">Roadmap</a>
+    </div>
+
+    <footer>Built with Claude Code · Baileys · LangGraph · PostgreSQL</footer>
+  </div>
+</body>
+</html>
