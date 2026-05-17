@@ -73,10 +73,14 @@ if ls sidecar/auth/session-*.json > /dev/null 2>&1; then
     log "Cleared $count stale Signal session file(s)"
 fi
 
+# Force-kill anything holding port 3000 before starting
+lsof -ti :3000 2>/dev/null | xargs kill -9 2>/dev/null || true
+sleep 1
+
 log "Starting Baileys sidecar..."
 (cd sidecar && node index.js) &
 PIDS+=($!)
-sleep 2
+sleep 3
 
 # ── 4. Python worker ───────────────────────────────────────────────────────
 log "Starting Python worker..."
