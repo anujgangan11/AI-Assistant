@@ -108,7 +108,8 @@ async def research_expert(state: AssistantState) -> dict:
 
 
 async def fundamental_analyst(state: AssistantState) -> dict:
-    from src.tools.robinhood import fetch_stock_data
+    from src.tools.robinhood import fetch_stock_data, format_stock_data
+    from src.tools.search import web_search
 
     ticker = state.get("ticker", "").strip()
     if not ticker:
@@ -117,7 +118,15 @@ async def fundamental_analyst(state: AssistantState) -> dict:
     llm = _get_llm()
     memories = state.get("memories_context", "")
 
-    data = await fetch_stock_data(ticker)
+    # Fetch Robinhood data + Tavily news in parallel
+    rh_data, news = await asyncio.gather(
+        fetch_stock_data(ticker),
+        web_search.ainvoke(f"{ticker} stock news earnings analysis 2025"),
+        return_exceptions=True,
+    )
+
+    fundamentals_text = format_stock_data(ticker, rh_data) if isinstance(rh_data, dict) else f"Could not fetch data for {ticker}."
+    news_text = news if isinstance(news, str) else "No recent news found."
 
     system = (
         "You are a fundamental investment analyst. "
@@ -130,10 +139,8 @@ async def fundamental_analyst(state: AssistantState) -> dict:
 
     user_content = (
         f"User asked: {state['inbound_text']}\n\n"
-        f"=== FUNDAMENTALS ({ticker}) ===\n{data.get('get_fundamentals', 'N/A')}\n\n"
-        f"=== ANALYST RATINGS ===\n{data.get('get_ratings', 'N/A')}\n\n"
-        f"=== RECENT EARNINGS ===\n{data.get('get_earnings', 'N/A')}\n\n"
-        f"=== NEWS ===\n{data.get('get_news', 'No recent news.')}"
+        f"{fundamentals_text}\n\n"
+        f"=== RECENT NEWS ===\n{news_text}"
     )
 
     response = await llm.ainvoke([
