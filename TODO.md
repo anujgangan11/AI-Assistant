@@ -29,9 +29,12 @@
 
 - [x] End-to-end WhatsApp test — send real message, get real AI reply
 - [x] Enable Mem0 `infer=True` once Ollama speeds are reliable (LLM fact extraction)
+- [x] Intent routing in supervisor — LLM classifies query → fundamental_analyst | research_expert
+- [x] Fundamental analyst node — yfinance fundamentals + Tavily news → LLM synthesis
 - [ ] PostgresSaver checkpointer — persistent conversation thread across worker restarts
-- [ ] Tavily web search tool wired into `research_expert`
-- [ ] Intent routing in supervisor — classify query type before dispatching
+- [ ] Tavily web search tool wired into `research_expert` (general queries)
+- [ ] Technical analyst — stock-technical MCP integration (charts, indicators)
+- [ ] Portfolio analyst — Robinhood MCP integration (holdings, P&L)
 
 ## 📋 Backlog
 

@@ -18,5 +18,11 @@ class AssistantState(TypedDict):
     # Mem0 semantic search results injected by context_loader
     memories_context: str
 
-    # Final reply produced by research_expert
+    # Final reply produced by research_expert / fundamental_analyst
     reply_text: str
+
+    # Supervisor routing: "fundamental_analyst" | "research_expert"
+    next: str
+
+    # Extracted stock ticker (empty string if not a stock query)
+    ticker: str

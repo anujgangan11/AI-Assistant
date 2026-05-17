@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 from typing import Optional
 
@@ -44,9 +45,47 @@ async def context_loader(state: AssistantState) -> dict:
     return {"memories_context": memories_context}
 
 
+_SUPERVISOR_PROMPT = """\
+You are a query router for a personal AI assistant with a financial specialist.
+
+Classify the user's message into one of these intents:
+- "fundamental_analyst": questions about a company's financials, earnings, revenue, P/E ratio,
+  analyst ratings, business fundamentals, or recent news about a specific stock/company.
+- "research_expert": everything else — general questions, personal topics, reminders, coding help, etc.
+
+If the intent is "fundamental_analyst", extract the primary stock ticker symbol (e.g. AAPL, NVDA).
+If no ticker is mentioned, infer it from the company name. If you cannot determine a ticker, use "".
+
+Respond with ONLY valid JSON, no markdown, no explanation:
+{"intent": "<intent>", "ticker": "<TICKER or empty string>"}
+"""
+
+
 async def supervisor(state: AssistantState) -> dict:
-    # v0: always routes to research_expert; intent classification comes in slice 3
-    return {}
+    llm = _get_llm()
+    try:
+        response = await llm.ainvoke([
+            SystemMessage(content=_SUPERVISOR_PROMPT),
+            HumanMessage(content=state["inbound_text"]),
+        ])
+        raw = response.content.strip()
+        # Strip markdown fences if LLM wraps the JSON
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        parsed = json.loads(raw)
+        intent = parsed.get("intent", "research_expert")
+        ticker = parsed.get("ticker", "").upper().strip()
+        if intent not in ("fundamental_analyst", "research_expert"):
+            intent = "research_expert"
+    except Exception:
+        logger.exception("Supervisor classification failed — defaulting to research_expert")
+        intent = "research_expert"
+        ticker = ""
+
+    logger.info("Supervisor → intent=%s ticker=%s", intent, ticker)
+    return {"next": intent, "ticker": ticker}
 
 
 async def research_expert(state: AssistantState) -> dict:
@@ -68,6 +107,53 @@ async def research_expert(state: AssistantState) -> dict:
     }
 
 
+async def fundamental_analyst(state: AssistantState) -> dict:
+    from src.tools.fundamental import fetch_fundamentals, fetch_news, format_fundamentals
+
+    ticker = state.get("ticker", "").strip()
+    if not ticker:
+        # No ticker extracted — fall back to a generic response
+        return await research_expert(state)
+
+    llm = _get_llm()
+    memories = state.get("memories_context", "")
+
+    # Fetch fundamentals + news in parallel
+    fundamentals, news = await asyncio.gather(
+        fetch_fundamentals(ticker),
+        fetch_news(ticker, ticker),
+        return_exceptions=True,
+    )
+
+    fundamentals_text = format_fundamentals(fundamentals) if isinstance(fundamentals, dict) else f"Could not fetch fundamentals for {ticker}."
+    news_text = news if isinstance(news, str) else ""
+
+    system = (
+        "You are a fundamental investment analyst. "
+        "Analyse the data below and give a clear, structured assessment. "
+        "Cover: business quality, valuation, key risks, and whether it looks attractive. "
+        "Be direct — the user wants actionable insight, not a disclaimer parade."
+    )
+    if memories:
+        system += f"\n\nUser context:\n{memories}"
+
+    user_content = (
+        f"User asked: {state['inbound_text']}\n\n"
+        f"=== FUNDAMENTALS ({ticker}) ===\n{fundamentals_text}\n\n"
+        f"=== RECENT NEWS ===\n{news_text or 'No recent news found.'}"
+    )
+
+    response = await llm.ainvoke([
+        SystemMessage(content=system),
+        HumanMessage(content=user_content),
+    ])
+
+    return {
+        "reply_text": response.content,
+        "messages": [AIMessage(content=response.content)],
+    }
+
+
 async def memory_writer(state: AssistantState) -> dict:
     from src.graph.mem0_client import get_memory
     mem = get_memory()
@@ -81,7 +167,6 @@ async def memory_writer(state: AssistantState) -> dict:
     except Exception:
         logger.exception("Mem0 add failed — memory not persisted for this turn")
 
-    # LangGraph requires at least one state field to be returned
     return {"memories_context": state.get("memories_context", "")}
 
 
