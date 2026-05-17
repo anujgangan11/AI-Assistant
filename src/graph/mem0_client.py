@@ -13,6 +13,38 @@ _memory: Optional[Memory] = None
 _EMBED_DIMS = 768
 
 
+def _patch_mem0_extraction() -> None:
+    # mem0 2.0.0 bug: local LLMs return extracted memories as ["text"] (list of
+    # strings) instead of [{"text": "...", "event": "ADD"}] (list of dicts).
+    # Normalise before mem0 tries to call .get("text") on each item.
+    try:
+        import mem0.memory.main as _m0
+        _orig = _m0.Memory._add_to_vector_store
+
+        def _patched(self, messages, processed_metadata, effective_filters, infer):
+            import mem0.memory.main as _inner
+            _orig_parse = _inner.json.loads
+
+            def _normalising_loads(s, **kw):
+                result = _orig_parse(s, **kw)
+                if isinstance(result, dict) and "memory" in result:
+                    result["memory"] = [
+                        {"text": m, "event": "ADD"} if isinstance(m, str) else m
+                        for m in result["memory"]
+                    ]
+                return result
+
+            _inner.json.loads = _normalising_loads
+            try:
+                return _orig(self, messages, processed_metadata, effective_filters, infer)
+            finally:
+                _inner.json.loads = _orig_parse
+
+        _m0.Memory._add_to_vector_store = _patched
+    except Exception:
+        pass
+
+
 def _register_numpy_adapter() -> None:
     """Register a psycopg3 text dumper for numpy arrays.
 
@@ -35,6 +67,7 @@ def _register_numpy_adapter() -> None:
 def get_memory() -> Memory:
     global _memory
     if _memory is None:
+        _patch_mem0_extraction()
         _register_numpy_adapter()
         from src.config import settings
 
