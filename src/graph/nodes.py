@@ -77,9 +77,7 @@ async def memory_writer(state: AssistantState) -> dict:
         {"role": "assistant", "content": state.get("reply_text", "")},
     ]
     try:
-        # infer=False skips the LLM extraction step — stores raw text instead.
-        # Switch to infer=True once Ollama speeds are reliably fast enough.
-        await asyncio.to_thread(mem.add, messages, user_id=state["user_id"], infer=False)
+        await asyncio.to_thread(mem.add, messages, user_id=state["user_id"], infer=True)
     except Exception:
         logger.exception("Mem0 add failed — memory not persisted for this turn")
 

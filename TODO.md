@@ -27,8 +27,8 @@
 
 ## 🔨 In Progress (v0 slice 3) — Reliability & Tools
 
-- [ ] End-to-end WhatsApp test — send real message, get real AI reply
-- [ ] Enable Mem0 `infer=True` once Ollama speeds are reliable (LLM fact extraction)
+- [x] End-to-end WhatsApp test — send real message, get real AI reply
+- [x] Enable Mem0 `infer=True` once Ollama speeds are reliable (LLM fact extraction)
 - [ ] PostgresSaver checkpointer — persistent conversation thread across worker restarts
 - [ ] Tavily web search tool wired into `research_expert`
 - [ ] Intent routing in supervisor — classify query type before dispatching
