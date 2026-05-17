@@ -51,6 +51,15 @@ else
 fi
 
 # ── 3. Baileys sidecar ─────────────────────────────────────────────────────
+# Delete stale Signal session files — they cause "Waiting for this message"
+# decryption errors after every sidecar restart. Bailing deletes re-negotiates
+# fresh sessions on first contact; creds.json and pre-keys are left intact.
+if ls sidecar/auth/session-*.json > /dev/null 2>&1; then
+    count=$(ls sidecar/auth/session-*.json | wc -l | tr -d ' ')
+    rm -f sidecar/auth/session-*.json
+    log "Cleared $count stale Signal session file(s)"
+fi
+
 log "Starting Baileys sidecar..."
 (cd sidecar && node index.js) &
 PIDS+=($!)
