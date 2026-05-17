@@ -59,7 +59,7 @@ def get_memory() -> Memory:
             llm=LlmConfig(
                 provider="ollama",
                 config={
-                    "model": "gemma4:e4b-mlx-bf16",
+                    "model": settings.OLLAMA_LLM_MODEL,
                     "ollama_base_url": settings.OLLAMA_LLM_URL,
                 },
             ),

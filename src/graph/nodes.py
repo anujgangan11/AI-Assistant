@@ -17,7 +17,7 @@ def _get_llm() -> ChatOllama:
     if _llm is None:
         from src.config import settings
         _llm = ChatOllama(
-            model="gemma4:e4b-mlx-bf16",
+            model=settings.OLLAMA_LLM_MODEL,
             base_url=settings.OLLAMA_LLM_URL,
             num_ctx=4096,
         )

@@ -18,8 +18,9 @@ class Settings(BaseSettings):
     SIDECAR_URL: str = "http://localhost:3000"
 
     # Ollama — separate instances to avoid model-swap penalty
-    OLLAMA_LLM_URL: str = "http://localhost:11434"    # gemma4 (LLM)
+    OLLAMA_LLM_URL: str = "http://localhost:11434"    # LLM inference
     OLLAMA_EMBED_URL: str = "http://localhost:11435"  # nomic-embed-text (embeddings)
+    OLLAMA_LLM_MODEL: str = "gemma4:latest"           # model to use for LLM
 
     @property
     def allowed_list(self) -> list[str]:
