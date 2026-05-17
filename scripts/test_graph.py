@@ -30,7 +30,7 @@ async def main():
     print("\n=== MEMORIES INJECTED ===")
     print(result["memories_context"] or "(none yet — first message)")
 
-    print("\n=== GEMMA4 REPLY ===")
+    print("\n=== AI REPLY ===")
     print(result["reply_text"])
 
 
