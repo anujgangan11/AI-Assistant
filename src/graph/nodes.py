@@ -16,7 +16,7 @@ def _get_llm() -> ChatOllama:
     global _llm
     if _llm is None:
         _llm = ChatOllama(
-            model="qwen2.5:7b",
+            model="gemma4:e4b-mlx-bf16",
             base_url="http://localhost:11434",
             num_ctx=4096,
         )
