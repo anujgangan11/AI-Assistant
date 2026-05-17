@@ -39,24 +39,27 @@ wait_for() {
 }
 
 # ── 1. Main Ollama — LLM (:11434) ─────────────────────────────────────────
-if curl -sf --max-time 2 http://localhost:11434/api/tags > /dev/null 2>&1; then
+if curl -sf --max-time 2 http://127.0.0.1:11434/api/tags > /dev/null 2>&1; then
     log "Main Ollama (:11434) already running"
 else
     warn "Main Ollama not running — starting it (logs: /tmp/ollama-llm.log)"
     ollama serve >> /tmp/ollama-llm.log 2>&1 &
     PIDS+=($!)
-    wait_for http://localhost:11434/api/tags "Main Ollama" 30
+    wait_for http://127.0.0.1:11434/api/tags "Main Ollama" 30
     log "Main Ollama ready"
 fi
 
 # ── 2. Embed Ollama — nomic-embed-text (:11435) ───────────────────────────
-if curl -sf --max-time 2 http://localhost:11435/api/tags > /dev/null 2>&1; then
+if curl -sf --max-time 2 http://127.0.0.1:11435/api/tags > /dev/null 2>&1; then
     log "Embed Ollama (:11435) already running"
 else
+    # Force-kill any suspended/zombie process still holding the port
+    lsof -ti :11435 2>/dev/null | xargs kill -9 2>/dev/null || true
+    sleep 1
     log "Starting embed Ollama (:11435)... (logs: /tmp/ollama-embed.log)"
     OLLAMA_HOST=127.0.0.1:11435 ollama serve >> /tmp/ollama-embed.log 2>&1 &
     PIDS+=($!)
-    wait_for http://localhost:11435/api/tags "Embed Ollama" 30
+    wait_for http://127.0.0.1:11435/api/tags "Embed Ollama" 30
     log "Embed Ollama ready"
 fi
 
