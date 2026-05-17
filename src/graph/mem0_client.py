@@ -21,7 +21,7 @@ def _patch_mem0_extraction() -> None:
         import mem0.memory.main as _m0
         _orig = _m0.Memory._add_to_vector_store
 
-        def _patched(self, messages, processed_metadata, effective_filters, infer):
+        def _patched(self, messages, processed_metadata, effective_filters, infer, **kwargs):
             import mem0.memory.main as _inner
             _orig_parse = _inner.json.loads
 
@@ -36,7 +36,7 @@ def _patch_mem0_extraction() -> None:
 
             _inner.json.loads = _normalising_loads
             try:
-                return _orig(self, messages, processed_metadata, effective_filters, infer)
+                return _orig(self, messages, processed_metadata, effective_filters, infer, **kwargs)
             finally:
                 _inner.json.loads = _orig_parse
 

@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 _RH_MCP_DIR = "/users/anuj/mcpServers/RH-mcp"
 
 _RH_SERVER = {
-    "command": "uv",
+    "command": "/Users/anuj/.local/bin/uv",
     "args": [
         "--directory", _RH_MCP_DIR,
         "run", "python", "main.py",
