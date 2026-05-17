@@ -15,9 +15,10 @@ _llm: Optional[ChatOllama] = None
 def _get_llm() -> ChatOllama:
     global _llm
     if _llm is None:
+        from src.config import settings
         _llm = ChatOllama(
             model="gemma4:e4b-mlx-bf16",
-            base_url="http://localhost:11434",
+            base_url=settings.OLLAMA_LLM_URL,
             num_ctx=4096,
         )
     return _llm

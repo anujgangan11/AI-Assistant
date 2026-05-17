@@ -9,8 +9,6 @@ from mem0.llms.configs import LlmConfig
 
 _memory: Optional[Memory] = None
 
-OLLAMA_URL = "http://localhost:11434"
-
 # nomic-embed-text produces 768-dim vectors
 _EMBED_DIMS = 768
 
@@ -54,15 +52,15 @@ def get_memory() -> Memory:
                 provider="ollama",
                 config={
                     "model": "nomic-embed-text",
-                    "ollama_base_url": OLLAMA_URL,
+                    "ollama_base_url": settings.OLLAMA_EMBED_URL,
                     "embedding_dims": _EMBED_DIMS,
                 },
             ),
             llm=LlmConfig(
                 provider="ollama",
                 config={
-                    "model": "qwen2.5:7b",
-                    "ollama_base_url": OLLAMA_URL,
+                    "model": "gemma4:e4b-mlx-bf16",
+                    "ollama_base_url": settings.OLLAMA_LLM_URL,
                 },
             ),
         )

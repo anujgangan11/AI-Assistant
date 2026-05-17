@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     # Baileys sidecar
     SIDECAR_URL: str = "http://localhost:3000"
 
+    # Ollama — separate instances to avoid model-swap penalty
+    OLLAMA_LLM_URL: str = "http://localhost:11434"    # gemma4 (LLM)
+    OLLAMA_EMBED_URL: str = "http://localhost:11435"  # nomic-embed-text (embeddings)
+
     @property
     def allowed_list(self) -> list[str]:
         return [p.strip() for p in self.ALLOWED_PHONE_NUMBERS.split(",") if p.strip()]
